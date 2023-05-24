@@ -9,6 +9,8 @@ function Compute_Corrections_Init(vert_coord::Vert_Coordinate, mesh::Spectral_Sp
     
     do_mass_correction, do_energy_correction, do_water_correction = atmo_data.do_mass_correction, atmo_data.do_energy_correction, atmo_data.do_water_correction
     
+    sum_tracers_p = 0.
+
     if (do_mass_correction) 
         mean_ps_p = Area_Weighted_Global_Mean(mesh, grid_ps_p)
     end
@@ -348,10 +350,10 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # Calculate latent heat and modify qv_current
     # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
 
-    # mean_ps_p, mean_energy_p, sum_tracers_p = Compute_Corrections_Init(vert_coord, mesh, atmo_data,
-    # grid_u_p, grid_v_p, grid_ps_p, grid_t_p, 
-    # grid_δu, grid_δv, grid_δt,  
-    # Δt, grid_energy_full, grid_tracers_p, grid_tracers_c, grid_δtracers, grid_tracers_full)
+    mean_ps_p, mean_energy_p, sum_tracers_p = Compute_Corrections_Init(vert_coord, mesh, atmo_data,
+    grid_u_p, grid_v_p, grid_ps_p, grid_t_p, 
+    grid_δu, grid_δv, grid_δt,  
+    Δt, grid_energy_full, grid_tracers_p, grid_tracers_c, grid_δtracers, grid_tracers_full)
     
     # compute pressure based on grid_ps -> grid_p_half, grid_lnp_half, grid_p_full, grid_lnp_full 
     Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full)
@@ -427,22 +429,23 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     Compute_Spectral_Damping!(integrator, spe_div_c, spe_div_p, spe_δdiv)
     Compute_Spectral_Damping!(integrator, spe_t_c, spe_t_p, spe_δt)
     ### By CJY2
-    # Compute_Spectral_Damping!(integrator, spe_tracers_c, spe_tracers_p, spe_δtracers)
+    Compute_Spectral_Damping!(integrator, spe_tracers_c, spe_tracers_p, spe_δtracers)
     ###
         
     Filtered_Leapfrog!(integrator, spe_δvor, spe_vor_p, spe_vor_c, spe_vor_n)
     Filtered_Leapfrog!(integrator, spe_δdiv, spe_div_p, spe_div_c, spe_div_n)
     Filtered_Leapfrog!(integrator, spe_δlnps, spe_lnps_p, spe_lnps_c, spe_lnps_n)
+    Filtered_Leapfrog!(integrator, spe_δtracers, spe_tracers_p, spe_tracers_c, spe_tracers_n)
     
     
     Trans_Spherical_To_Grid!(mesh, spe_vor_n, grid_vor)
     Trans_Spherical_To_Grid!(mesh, spe_div_n, grid_div)
     UV_Grid_From_Vor_Div!(mesh, spe_vor_n, spe_div_n, grid_u_n, grid_v_n)
-
-    ### By CJ2
-    
     Trans_Spherical_To_Grid!(mesh, spe_lnps_n, grid_lnps)
     grid_ps_n .= exp.(grid_lnps)
+
+    Trans_Spherical_To_Grid!(mesh, spe_tracers_n, grid_tracers_n)
+
 
     ### By CJY 0517
     # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
@@ -459,21 +462,21 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # Filtered_Leapfrog!(integrator, spe_δtracers, spe_tracers_p, spe_tracers_c, spe_tracers_n)
     # Trans_Spherical_To_Grid!(mesh, spe_tracers_n, grid_tracers_n)
 
-    Trans_Spherical_To_Grid!(mesh, spe_δtracers, grid_δtracers)
+    # Trans_Spherical_To_Grid!(mesh, spe_δtracers, grid_δtracers)
 
-    HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
+    # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
 
-    init_step = integrator.init_step
-    robert_coef = integrator.robert_coef
-    Δt = integrator.Δt
-    if (init_step) 
-        grid_tracers_n .= grid_tracers_c + Δt*grid_δtracers
-        grid_tracers_c .+= robert_coef*(-1.0*grid_tracers_c + grid_tracers_n)
-    else
-        grid_tracers_c .+= robert_coef*(grid_tracers_p - 2*grid_tracers_c)
-        grid_tracers_n .= grid_tracers_p + 2*Δt*grid_δtracers
-        grid_tracers_c .+= robert_coef*grid_tracers_n
-    end
+    # init_step = integrator.init_step
+    # robert_coef = integrator.robert_coef
+    # Δt = integrator.Δt
+    # if (init_step) 
+    #     grid_tracers_n .= grid_tracers_c + Δt*grid_δtracers
+    #     grid_tracers_c .+= robert_coef*(-1.0*grid_tracers_c + grid_tracers_n)
+    # else
+    #     grid_tracers_c .+= robert_coef*(grid_tracers_p - 2*grid_tracers_c)
+    #     grid_tracers_n .= grid_tracers_p + 2*Δt*grid_δtracers
+    #     grid_tracers_c .+= robert_coef*grid_tracers_n
+    # end
 
 
     Filtered_Leapfrog!(integrator, spe_δt, spe_t_p, spe_t_c, spe_t_n)
@@ -482,15 +485,15 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # @info "min grid_tracers_n" minimum(grid_tracers_n)
     # @info "min dyn.grid_tracers_c" minimum(dyn_data.grid_tracers_n)
 
-    # Compute_Corrections!(vert_coord, mesh, atmo_data, mean_ps_p, mean_energy_p, 
-    #     grid_u_n, grid_v_n,
-    #     grid_energy_full,
-    #     grid_ps_n, spe_lnps_n, 
-    #     grid_t_n, spe_t_n, 
-    #     sum_tracers_p, grid_tracers_p, grid_tracers_c, grid_tracers_n,
-    #     grid_t,
-    #     grid_p_full
-    # )
+    Compute_Corrections!(vert_coord, mesh, atmo_data, mean_ps_p, mean_energy_p, 
+        grid_u_n, grid_v_n,
+        grid_energy_full,
+        grid_ps_n, spe_lnps_n, 
+        grid_t_n, spe_t_n, 
+        sum_tracers_p, grid_tracers_p, grid_tracers_c, grid_tracers_n,
+        grid_t,
+        grid_p_full
+    )
 
     ###
 
