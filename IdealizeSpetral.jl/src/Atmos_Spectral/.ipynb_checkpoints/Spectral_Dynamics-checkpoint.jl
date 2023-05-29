@@ -363,7 +363,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
    
     ###
     Add_Horizontal_Advection!(mesh, spe_t_c, grid_u, grid_v, grid_δt)
-    HS_forcing_water_vapor!(grid_tracers_n,  grid_t, grid_δt, grid_p_full)
+    HS_forcing_water_vapor!(grid_tracers_c,  grid_t, grid_δt, grid_p_full)
     Trans_Grid_To_Spherical!(mesh, grid_δt, spe_δt)
    
     
@@ -408,11 +408,6 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     grid_ps_n .= exp.(grid_lnps)
     Trans_Spherical_To_Grid!(mesh, spe_t_n, grid_t_n)
     
-
-
-
-    
-
     
 
     # Correct the negative value results from advection
