@@ -3,7 +3,7 @@ using JGCM
 include("HS.jl")
 
 #############################################################
-end_day = 5
+end_day = 20
 spinup_day = 1
 
 physics_params = Dict{String,Float64}("σ_b"=>0.7, "k_f" => 1.0, "k_a" => 1.0/40.0, "k_s" => 1.0/4.0, "ΔT_y" => 60.0, "Δθ_z" => 10.0)

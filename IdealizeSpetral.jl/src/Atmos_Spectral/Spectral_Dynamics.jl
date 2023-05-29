@@ -352,13 +352,20 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     ### By CJY2
     Vert_Advection!(vert_coord, grid_tracers_c, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme,  grid_δQ)
     grid_δtracers .+= grid_δQ
-    ###
-    Add_Horizontal_Advection!(mesh, spe_t_c, grid_u, grid_v, grid_δt)
-    Trans_Grid_To_Spherical!(mesh, grid_δt, spe_δt)
-    ### By CJY2
+    
+    ### spectral tracers need to be done first 
     Add_Horizontal_Advection!(mesh, spe_tracers_c, grid_u, grid_v, grid_δtracers)
     Trans_Grid_To_Spherical!(mesh, grid_δtracers, spe_δtracers)
+    Compute_Spectral_Damping!(integrator, spe_tracers_c, spe_tracers_p, spe_δtracers)
+    Filtered_Leapfrog!(integrator, spe_δtracers, spe_tracers_p, spe_tracers_c, spe_tracers_n)
+    Trans_Spherical_To_Grid!(mesh, spe_tracers_n, grid_tracers_n)
     ###
+   
+    ###
+    Add_Horizontal_Advection!(mesh, spe_t_c, grid_u, grid_v, grid_δt)
+    HS_forcing_water_vapor!(grid_tracers_n,  grid_t, grid_δt, grid_p_full)
+    Trans_Grid_To_Spherical!(mesh, grid_δt, spe_δt)
+   
     
     grid_absvor = dyn_data.grid_absvor
     Compute_Abs_Vor!(grid_vor, atmo_data.coriolis, grid_absvor)
@@ -369,18 +376,13 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     
     
     Vor_Div_From_Grid_UV!(mesh, grid_δu, grid_δv, spe_δvor, spe_δdiv)
-    
 
     grid_energy_full .= grid_geopot_full .+ 0.5 * (grid_u.^2 + grid_v.^2)
     Trans_Grid_To_Spherical!(mesh, grid_energy_full, spe_energy)
     Apply_Laplacian!(mesh, spe_energy)
     spe_δdiv .-= spe_energy
     
-    # tracer needs to be calculate first #
-    Compute_Spectral_Damping!(integrator, spe_tracers_c, spe_tracers_p, spe_δtracers)
-    Filtered_Leapfrog!(integrator, spe_δtracers, spe_tracers_p, spe_tracers_c, spe_tracers_n)
-    Trans_Spherical_To_Grid!(mesh, spe_tracers_n, grid_tracers_n)
-    ###
+    
     
     Implicit_Correction!(semi_implicit, vert_coord, atmo_data,
     spe_div_c, spe_div_p, spe_lnps_c, spe_lnps_p, spe_t_c, spe_t_p, 
@@ -407,9 +409,6 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     Trans_Spherical_To_Grid!(mesh, spe_t_n, grid_t_n)
     
 
-    ### By CJY 0517
-    HS_forcing_water_vapor!(grid_tracers_n,  grid_t, grid_δt, grid_p_full)
-    ###
 
 
     
@@ -689,8 +688,8 @@ function HS_forcing_water_vapor!(grid_tracers_n::Array{Float64, 3},  grid_t::Arr
 
     # FIXME
     day_to_sec = 86400.
-    grid_δt  .+= (grid_tracers_diff .* Lv ./ cp) ./ day_to_sec
-    @info maximum((grid_tracers_diff .* Lv ./ cp).*86400)
+    grid_δt  .+= (grid_tracers_diff .* Lv ./ cp)./day_to_sec
+    @info maximum((grid_tracers_diff .* Lv ./ cp))
 end
 
 
