@@ -641,18 +641,18 @@ function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data,
 end 
 
 
-function HS_forcing_water_vapor!(grid_tracers_n::Array{Float64, 3},  grid_t::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3})
+function HS_forcing_water_vapor!(grid_tracers_c::Array{Float64, 3},  grid_t::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3})
    
     
 
     cp  = 1004.
     Lv = 2.5*10^6.
     Rv = 461.
-    grid_tracers_diff   = zeros(size(grid_tracers_n)...)
-    grid_tracers_n_max  = zeros(size(grid_tracers_n)...)
-    grid_tracers_n_max .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
+    grid_tracers_diff   = zeros(size(grid_tracers_c)...)
+    grid_tracers_c_max  = zeros(size(grid_tracers_c)...)
+    grid_tracers_c_max .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
     
-    grid_tracers_diff  .= max.(0.,grid_tracers_n.-grid_tracers_n_max)
+    grid_tracers_diff  .= max.(0.,grid_tracers_c.-grid_tracers_c_max)
 #    es = 611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t))
 
 
