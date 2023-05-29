@@ -1,5 +1,1 @@
-# Dycore-verion.2-date-passive-tracer
-Dycore version.2 
-# Dycore
-# Dycore
-# Dycore
+# Dycore with passive tracer and latent heat
