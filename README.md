@@ -1,3 +1,1 @@
-# Dycore with passive tracer and latent heat
-# dycore-
-# dycore
+# dycore with passive tracer and latent heat release
